@@ -1,9 +1,9 @@
 import asyncio
 import time
 
-from iot.devices import HueLightDevice, SmartSpeakerDevice, SmartToiletDevice
-from iot.message import Message, MessageType
-from iot.service import IOTService, run_parallel, run_sequence
+from app.iot.devices import HueLightDevice, SmartSpeakerDevice, SmartToiletDevice
+from app.iot.message import Message, MessageType
+from app.iot.service import IOTService, run_parallel, run_sequence
 
 
 async def main_async() -> None:
@@ -22,10 +22,10 @@ async def main_async() -> None:
     # create a few programs
     print("\n--- Wake Up Program ---")
     await run_parallel(
-        service.send_msg(Message(hue_light_id, MessageType.SWITCH_ON)),
+        service.send_message(Message(hue_light_id, MessageType.SWITCH_ON)),
         run_sequence(
-            service.send_msg(Message(speaker_id, MessageType.SWITCH_ON)),
-            service.send_msg(
+            service.send_message(Message(speaker_id, MessageType.SWITCH_ON)),
+            service.send_message(
                 Message(
                     speaker_id,
                     MessageType.PLAY_SONG,
@@ -36,11 +36,11 @@ async def main_async() -> None:
     )
     print("\n--- Sleep Program ---")
     await run_parallel(
-        service.send_msg(Message(hue_light_id, MessageType.SWITCH_OFF)),
-        service.send_msg(Message(speaker_id, MessageType.SWITCH_OFF)),
+        service.send_message(Message(hue_light_id, MessageType.SWITCH_OFF)),
+        service.send_message(Message(speaker_id, MessageType.SWITCH_OFF)),
         run_sequence(
-            service.send_msg(Message(toilet_id, MessageType.FLUSH)),
-            service.send_msg(Message(toilet_id, MessageType.CLEAN)),
+            service.send_message(Message(toilet_id, MessageType.FLUSH)),
+            service.send_message(Message(toilet_id, MessageType.CLEAN)),
         ),
     )
 

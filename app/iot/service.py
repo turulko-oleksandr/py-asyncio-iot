@@ -27,7 +27,8 @@ async def run_sequence(*functions: Awaitable[Any]) -> None:
 
     Args:
         *functions: Awaitable objects (already called coroutines).
-                    Do NOT pass bare callables (e.g., pass func() not func).
+                    Pass awaitable objects (already-called coroutines),
+                    e.g. pass func() not func
     """
     for func in functions:
         await func
@@ -39,7 +40,7 @@ async def run_parallel(*functions: Awaitable[Any]) -> None:
 
     Args:
         *functions: Awaitable objects (already called coroutines).
-                    Do NOT pass bare callables.
+                    Pass awaitable objects (already-called coroutines), e.g. pass func() not func
     """
     await asyncio.gather(*functions)
 
@@ -55,8 +56,10 @@ class IOTService:
         return device_id
 
     async def register_devices(self, devices: list[Device]) -> list[str]:
-        return await asyncio.gather(
-            *(self.register_device(device) for device in devices)
+        return list(
+            await asyncio.gather(
+                *(self.register_device(device) for device in devices)
+            )
         )
 
     async def unregister_device(self, device_id: str) -> None:
@@ -70,7 +73,7 @@ class IOTService:
             raise ValueError(f"Device {device_id} not found")
         return self.devices[device_id]
 
-    async def send_msg(self, msg: Message) -> None:
+    async def send_message(self, msg: Message) -> None:
         """Send a single message to a registered device."""
         if msg.device_id not in self.devices:
             raise ValueError(f"Device {msg.device_id} not found")
