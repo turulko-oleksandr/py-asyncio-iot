@@ -1,17 +1,15 @@
 import asyncio
 import random
 import string
-from typing import Protocol, Awaitable, Any
+from typing import Protocol, Any, Awaitable
 
-from app.iot.message import MessageType, Message
+from .message import MessageType, Message
 
 
 def generate_id(length: int = 8) -> str:
     return "".join(random.choices(string.ascii_uppercase, k=length))
 
 
-# Protocol is very similar to ABC, but uses duck typing
-# so devices should not inherit for it
 class Device(Protocol):
     async def connect(self) -> None:
         ...
@@ -24,11 +22,25 @@ class Device(Protocol):
 
 
 async def run_sequence(*functions: Awaitable[Any]) -> None:
+    """
+    Run awaitables one after another in the given order.
+
+    Args:
+        *functions: Awaitable objects (already called coroutines).
+                    Do NOT pass bare callables (e.g., pass func() not func).
+    """
     for func in functions:
         await func
 
 
 async def run_parallel(*functions: Awaitable[Any]) -> None:
+    """
+    Run awaitables concurrently (fire-and-wait semantics).
+
+    Args:
+        *functions: Awaitable objects (already called coroutines).
+                    Do NOT pass bare callables.
+    """
     await asyncio.gather(*functions)
 
 
@@ -48,17 +60,28 @@ class IOTService:
         )
 
     async def unregister_device(self, device_id: str) -> None:
+        if device_id not in self.devices:
+            raise ValueError(f"Device {device_id} not found")
         await self.devices[device_id].disconnect()
         del self.devices[device_id]
 
     def get_device(self, device_id: str) -> Device:
+        if device_id not in self.devices:
+            raise ValueError(f"Device {device_id} not found")
         return self.devices[device_id]
 
+    async def send_msg(self, msg: Message) -> None:
+        """Send a single message to a registered device."""
+        if msg.device_id not in self.devices:
+            raise ValueError(f"Device {msg.device_id} not found")
+        await self.devices[msg.device_id].send_message(msg.msg_type, msg.data)
+
     async def run_program(self, program: list[Message]) -> None:
+        """
+        Run a list of messages sequentially (legacy mode).
+        Consider replacing with run_sequence / run_parallel in new code.
+        """
         print("=====RUNNING PROGRAM======")
         for msg in program:
-            await self.send_msg(msg)
+            await self.send_message(msg)
         print("=====END OF PROGRAM======")
-
-    async def send_msg(self, msg: Message) -> None:
-        await self.devices[msg.device_id].send_message(msg.msg_type, msg.data)
